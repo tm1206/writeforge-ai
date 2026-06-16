@@ -1,0 +1,4 @@
+google-generativeai==0.8.6
+boto3
+streamlit
+python-dotenv
