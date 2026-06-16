@@ -109,3 +109,7 @@ This launches a local web app that:
 - All credentials are loaded from `.env` via `python-dotenv` — never hardcode secrets.
 - Both `generate.py` and `app.py` include error handling and progress logging
   so you can see exactly what's happening at each step.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
