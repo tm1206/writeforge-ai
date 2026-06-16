@@ -113,9 +113,10 @@ streamlit run app.py
 This launches a local web app that:
 - Lets you type a topic and click "🚀 Generate Blog" to generate and upload
   a new post without leaving the browser
-- Fetches every `.md` blog post from your S3 bucket
-- Lists each post with its title and generation date, sorted by S3's
-  `LastModified` timestamp (most recent first)
+- Fetches every `.md` blog post from your S3 bucket (cached for 60 seconds,
+  with a loading spinner shown while fetching)
+- Lists each post with its title and upload time shown in IST (UTC+5:30),
+  sorted by S3's `LastModified` timestamp (most recent first)
 - Lets you click "Read →" on any post to view the full content
 - Shows the total number of blogs in the sidebar
 
