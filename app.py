@@ -11,7 +11,7 @@ Run with:
 
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import boto3
 import streamlit as st
@@ -28,6 +28,8 @@ AWS_REGION = os.getenv("AWS_REGION")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 BLOG_PREFIX = "blogs/"
+
+IST_OFFSET = timedelta(hours=5, minutes=30)
 
 
 def get_s3_client():
@@ -53,12 +55,26 @@ def parse_title(content: str, fallback: str) -> str:
     return fallback
 
 
-def parse_date(content: str, fallback_dt: datetime) -> str:
-    """Extract the generated_at metadata comment, or fall back to S3 LastModified."""
-    match = re.search(r"<!--\s*generated_at:\s*(.+?)\s*-->", content)
-    if match:
-        return match.group(1).strip()
-    return fallback_dt.strftime("%Y-%m-%d %H:%M:%S")
+def to_ist(dt: datetime) -> str:
+    """Convert a UTC datetime (e.g. S3 LastModified) to an IST-formatted string."""
+    naive_utc = dt.replace(tzinfo=None) if dt.tzinfo is not None else dt
+    ist_dt = naive_utc + IST_OFFSET
+    return ist_dt.strftime("%Y-%m-%d %H:%M:%S") + " IST"
+
+
+def strip_metadata_and_title(content: str) -> str:
+    """Strip the generated_at metadata comment and the first H1 title line.
+
+    The title is rendered separately as plain text (see render_blog_detail),
+    so it's removed here to avoid duplicating it inside the Markdown body.
+    """
+    body = re.sub(r"<!--\s*generated_at:.+?-->\s*", "", content, count=1)
+    lines = body.splitlines()
+    for i, line in enumerate(lines):
+        if line.strip().startswith("# "):
+            del lines[i]
+            break
+    return "\n".join(lines).strip()
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -87,7 +103,8 @@ def fetch_blogs():
 
                 filename = key.split("/")[-1]
                 title = parse_title(content, fallback=filename)
-                date_str = parse_date(content, fallback_dt=obj["LastModified"])
+                last_modified = obj["LastModified"]
+                date_str = to_ist(last_modified)
 
                 blogs.append(
                     {
@@ -95,7 +112,7 @@ def fetch_blogs():
                         "filename": filename,
                         "title": title,
                         "date": date_str,
-                        "last_modified": obj["LastModified"],
+                        "last_modified": last_modified,
                         "content": content,
                     }
                 )
@@ -186,7 +203,7 @@ def render_blog_list(blogs: list):
         with st.container(border=True):
             col1, col2 = st.columns([4, 1])
             with col1:
-                st.subheader(blog["title"])
+                st.markdown(f"**{blog['title']}**")
                 st.caption(f"🗓️ {blog['date']}")
             with col2:
                 if st.button("Read →", key=f"read_{blog['key']}", use_container_width=True):
@@ -201,9 +218,10 @@ def render_blog_detail(blog: dict):
 
     st.divider()
     st.caption(f"🗓️ {blog['date']} • `{blog['filename']}`")
-    # Strip the metadata HTML comment before rendering.
-    visible_content = re.sub(r"<!--\s*generated_at:.+?-->\s*", "", blog["content"], count=1)
-    st.markdown(visible_content)
+    # Title is rendered as plain text (not a Markdown heading) so it doesn't
+    # pick up Streamlit's heading-anchor link icon.
+    st.markdown(f"**{blog['title']}**")
+    st.markdown(strip_metadata_and_title(blog["content"]))
 
 
 def main():
