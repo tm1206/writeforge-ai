@@ -77,7 +77,7 @@ def strip_metadata_and_title(content: str) -> str:
     return "\n".join(lines).strip()
 
 
-@st.cache_data(ttl=60, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner="📡 Loading blogs from S3...")
 def fetch_blogs():
     """List and download all .md blog files from the S3 bucket."""
     if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_BUCKET_NAME, AWS_REGION]):
