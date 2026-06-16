@@ -15,8 +15,8 @@ import sys
 from datetime import datetime
 
 import boto3
-import google.generativeai as genai
 from dotenv import load_dotenv
+from google import genai
 
 
 def slugify(text: str) -> str:
@@ -49,14 +49,11 @@ def load_config():
 
 
 def generate_blog_content(topic: str, api_key: str) -> str:
-    """Use Gemini (gemini-1.5-flash) to generate a structured blog post in Markdown."""
+    """Use Gemini (gemini-flash-latest) to generate a structured blog post in Markdown."""
     print(f"🤖 Generating blog post for topic: '{topic}' using Gemini...")
 
     try:
-        genai.configure(api_key=api_key)
-        # gemini-1.5-flash has been retired by Google; gemini-flash-latest is
-        # the stable alias that always points at the current flash-tier model.
-        model = genai.GenerativeModel("gemini-flash-latest")
+        client = genai.Client(api_key=api_key)
 
         prompt = f"""
 Write a complete, well-structured blog post about: "{topic}"
@@ -72,7 +69,12 @@ Make the content informative, engaging, and ready to publish. Do not include
 any text outside the Markdown blog content itself (no preamble, no notes).
 """
 
-        response = model.generate_content(prompt)
+        # gemini-1.5-flash has been retired by Google; gemini-flash-latest is
+        # the stable alias that always points at the current flash-tier model.
+        response = client.models.generate_content(
+            model="gemini-flash-latest",
+            contents=prompt,
+        )
 
         if not response or not getattr(response, "text", None):
             raise ValueError("Gemini returned an empty response.")
