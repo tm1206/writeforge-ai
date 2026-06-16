@@ -92,6 +92,16 @@ This will:
 python generate.py "The Future of Remote Work"
 ```
 
+**More topic ideas to try:**
+
+```bash
+python generate.py "10 Productivity Hacks for Software Developers"
+python generate.py "A Beginner's Guide to Investing in Index Funds"
+python generate.py "How Artificial Intelligence is Changing Healthcare"
+python generate.py "Sustainable Travel: How to Explore the World Responsibly"
+python generate.py "The Rise of No-Code Tools and What They Mean for Developers"
+```
+
 ### Browse blogs (Web App)
 
 ```bash
