@@ -95,11 +95,14 @@ def fetch_blogs():
                         "filename": filename,
                         "title": title,
                         "date": date_str,
+                        "last_modified": obj["LastModified"],
                         "content": content,
                     }
                 )
 
-        blogs.sort(key=lambda b: b["date"], reverse=True)
+        # Sort by S3's own LastModified timestamp (most recent first), not by
+        # the displayed date string, which may come from generated_at metadata.
+        blogs.sort(key=lambda b: b["last_modified"], reverse=True)
         return blogs, None
 
     except Exception as e:
