@@ -17,12 +17,15 @@ import boto3
 import streamlit as st
 from dotenv import load_dotenv
 
+from generate import generate_blog_content, save_blog_locally, upload_to_s3
+
 load_dotenv()
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
 AWS_REGION = os.getenv("AWS_REGION")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 BLOG_PREFIX = "blogs/"
 
@@ -103,6 +106,55 @@ def fetch_blogs():
         return [], f"Failed to fetch blogs from S3: {e}"
 
 
+def render_generate_section():
+    """Top-of-page form to generate a new blog post on demand via Gemini + S3."""
+    st.subheader("✍️ Generate New Blog")
+
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        topic = st.text_input(
+            "Topic",
+            key="new_blog_topic",
+            placeholder="e.g. The Future of Remote Work",
+            label_visibility="collapsed",
+        )
+    with col2:
+        generate_clicked = st.button("🚀 Generate Blog", use_container_width=True)
+
+    if generate_clicked:
+        topic = topic.strip()
+        if not topic:
+            st.warning("⚠️ Please enter a topic first.")
+        elif not GEMINI_API_KEY:
+            st.error("❌ Missing GEMINI_API_KEY in .env")
+        else:
+            with st.spinner("Generating blog with Gemini AI..."):
+                try:
+                    content = generate_blog_content(topic, GEMINI_API_KEY)
+                    filepath, filename = save_blog_locally(topic, content)
+                    upload_to_s3(
+                        filepath,
+                        filename,
+                        {
+                            "AWS_ACCESS_KEY_ID": AWS_ACCESS_KEY_ID,
+                            "AWS_SECRET_ACCESS_KEY": AWS_SECRET_ACCESS_KEY,
+                            "AWS_BUCKET_NAME": AWS_BUCKET_NAME,
+                            "AWS_REGION": AWS_REGION,
+                        },
+                    )
+                except SystemExit:
+                    # generate.py helpers call sys.exit() on failure; surface
+                    # that as a Streamlit error instead of killing the app.
+                    st.error("❌ Blog generation failed. Check the terminal logs for details.")
+                    return
+
+            st.success("✅ Blog generated and uploaded to S3!")
+            st.cache_data.clear()
+            st.rerun()
+
+    st.divider()
+
+
 def render_sidebar(total_count: int):
     with st.sidebar:
         st.title("📝 WriteForge AI")
@@ -153,6 +205,8 @@ def render_blog_detail(blog: dict):
 
 def main():
     st.set_page_config(page_title="WriteForge AI", page_icon="📝", layout="wide")
+
+    render_generate_section()
 
     blogs, error = fetch_blogs()
 
