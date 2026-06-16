@@ -10,28 +10,30 @@ every post that's ever been generated.
 - Generate a complete, well-structured Markdown blog post from just a topic
 - Automatically save every post locally with a timestamped filename
 - Automatically upload every post to an AWS S3 bucket
-- Browse all generated blogs in a clean Streamlit web interface
+- Generate new posts right from the Streamlit UI, no terminal required
+- Browse all generated blogs in a clean Streamlit web interface, sorted by
+  most recently uploaded to S3
 - Click into any post to read the full content
 - See total blog count at a glance
 
 ## Tech Stack
 
-- **Google Gemini API** (`gemini-1.5-flash`) — blog content generation
+- **Google Gemini API** (`gemini-flash-latest`) — blog content generation
 - **AWS S3** — cloud storage for generated blog posts
-- **Streamlit** — web app for browsing and reading blogs
+- **Streamlit** — web app for browsing, reading, and generating blogs
 - **Python** — CLI tooling, AWS integration via `boto3`
 
 ## Project Structure
 
 ```
 writeforge-ai/
-├── generate.py        # CLI tool to generate + upload a blog post
-├── app.py              # Streamlit app to browse blogs from S3
+├── generate.py        # CLI tool + reusable generation/upload helpers
+├── app.py              # Streamlit app to generate, browse, and read blogs
 ├── requirements.txt    # Python dependencies
 ├── .gitignore
 ├── README.md
 ├── .env                # Your credentials (not committed)
-└── blogs/               # Locally saved blog posts (not committed)
+└── blogs/               # Generated blog posts (committed to the repo)
 ```
 
 ## Setup
@@ -102,15 +104,18 @@ python generate.py "Sustainable Travel: How to Explore the World Responsibly"
 python generate.py "The Rise of No-Code Tools and What They Mean for Developers"
 ```
 
-### Browse blogs (Web App)
+### Generate & browse blogs (Web App)
 
 ```bash
 streamlit run app.py
 ```
 
 This launches a local web app that:
+- Lets you type a topic and click "🚀 Generate Blog" to generate and upload
+  a new post without leaving the browser
 - Fetches every `.md` blog post from your S3 bucket
-- Lists each post with its title and generation date
+- Lists each post with its title and generation date, sorted by S3's
+  `LastModified` timestamp (most recent first)
 - Lets you click "Read →" on any post to view the full content
 - Shows the total number of blogs in the sidebar
 
